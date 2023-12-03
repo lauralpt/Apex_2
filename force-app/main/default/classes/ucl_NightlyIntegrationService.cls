@@ -3,13 +3,15 @@ public class ucl_NightlyIntegrationService {
     
     public static void performNightlyIntegration() {
         try {
-           
             String herokuData = fetchDataFromHeroku();
             // Parseo de datos
             List<ucl_LegalAdvisorWrapper> legalAdvisors = parseHerokuData(herokuData);
-
+            
+            // Filtrar asesores legales habilitados
+            List<ucl_LegalAdvisorWrapper> enabledAdvisor = filterEnabledAdvisors(legalAdvisors);
+            
             // update o insert de informacion
-            upsertLegalAdvisorsAndClients(legalAdvisors);
+            upsertLegalAdvisorsAndClients(enabledAdvisor);
 
         } catch (Exception ex) {
             // Error Logging
@@ -29,6 +31,7 @@ public class ucl_NightlyIntegrationService {
         }
         return enabledAdvisors;
     }
+    
     // Método para recuperar datos desde Heroku
     private static String fetchDataFromHeroku() {
         // Url para consumir el json
@@ -67,7 +70,7 @@ public class ucl_NightlyIntegrationService {
                 As_Of_Date_Date__c = Date.valueOf(advisorWrapper.AsOfDate)
             );
 
-            // Assuming AccountNumber is an external ID
+            // Se asume AccountNumber is an external ID
             legalAdvisorsToUpsert.add(legalAdvisor);
 
             for (ucl_ClientWrapper clientWrapper : advisorWrapper.Clients) {
@@ -86,10 +89,9 @@ public class ucl_NightlyIntegrationService {
         }
 
         // Update o insert de Legal Advisors
-        //upsert legalAdvisorsToUpsert Account_Number__c;
-
+        upsert legalAdvisorsToUpsert Account_Number__c;
         // Update o insert de Clients
-        //upsert clientsToUpsert Client_Number__c;
+        upsert clientsToUpsert Client_Number__c;
     }
 
     // Método para registrar errores
@@ -108,7 +110,6 @@ public class ucl_NightlyIntegrationService {
         mail.setToAddresses(toAddresses);
         mail.setSubject('Error en la Sincronización de Datos');
         mail.setPlainTextBody('Se produjo un error: ' + errorMessage);
-
         Messaging.sendEmail(new Messaging.SingleEmailMessage[] { mail });
     }
 
