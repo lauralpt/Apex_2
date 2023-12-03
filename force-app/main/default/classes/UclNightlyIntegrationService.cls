@@ -99,7 +99,17 @@ public class ucl_NightlyIntegrationService {
         errorLog.Name = stackTrace;
         errorLog.affectedRecords__c = affectedRecords;
         insert errorLog;
+    
+        // Eliminar registros de errores de más de 30 días
+        Integer retentionDays = 30;
+        Date retentionDate = System.today().addDays(-retentionDays);
+        List<ucl_Error_Log__c> oldErrorLogs = [SELECT Id FROM ucl_Error_Log__c WHERE CreatedDate < :retentionDate];
+        
+        if (!oldErrorLogs.isEmpty()) {
+            delete oldErrorLogs;
+        }
     }
+    
 
     // Metodo para enviar el email notificador del error
      private static void sendErrorNotification(String errorMessage) {
