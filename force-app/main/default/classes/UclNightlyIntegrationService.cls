@@ -1,17 +1,15 @@
 public class ucl_NightlyIntegrationService {
 
     
-    public static void performNightlyIntegration() {
+    public static void PerformNightlyIntegration() {
         try {
             String herokuData = fetchDataFromHeroku();
             // Parseo de datos
-            List<ucl_LegalAdvisorWrapper> legalAdvisors = parseHerokuData(herokuData);
-            
+            List<UclLegalAdvisorWrapper> legalAdvisors = parseHerokuData(herokuData);
             // Filtrar asesores legales habilitados
-            List<ucl_LegalAdvisorWrapper> enabledAdvisor = filterEnabledAdvisors(legalAdvisors);
-            
+            List<UclLegalAdvisorWrapper> enabledAdvisor = filterEnabledAdvisors(legalAdvisors);
             // update o insert de informacion
-            upsertLegalAdvisorsAndClients(enabledAdvisor);
+            UpsertLegalAdvisorsAndClients(enabledAdvisor);
 
         } catch (Exception ex) {
             // Error Logging
@@ -22,9 +20,9 @@ public class ucl_NightlyIntegrationService {
     }
 	
     // Método para filtrar asesores legales habilitados
-      private static List<ucl_LegalAdvisorWrapper> filterEnabledAdvisors(List<ucl_LegalAdvisorWrapper> legalAdvisors) {
-        List<ucl_LegalAdvisorWrapper> enabledAdvisors = new List<ucl_LegalAdvisorWrapper>();
-        for (ucl_LegalAdvisorWrapper advisor : legalAdvisors) {
+      private static List<UclLegalAdvisorWrapper> filterEnabledAdvisors(List<UclLegalAdvisorWrapper> legalAdvisors) {
+        List<UclLegalAdvisorWrapper> enabledAdvisors = new List<UclLegalAdvisorWrapper>();
+        for (UclLegalAdvisorWrapper advisor : legalAdvisors) {
             if (advisor.AccountStatus == 'Enabled') {
                 enabledAdvisors.add(advisor);
             }
@@ -33,7 +31,7 @@ public class ucl_NightlyIntegrationService {
     }
     
     // Método para recuperar datos desde Heroku
-    private static String fetchDataFromHeroku() {
+    private static String FetchDataFromHeroku() {
         // Url para consumir el json
         String herokuUrl = 'https://altimetrik-bootcamp.herokuapp.com/LegalAccounts';
         
@@ -53,34 +51,34 @@ public class ucl_NightlyIntegrationService {
     }
 
     // Método para parsear datos JSON a la clase 
-    private static List<ucl_LegalAdvisorWrapper> parseHerokuData(String herokuData) {
-        return (List<ucl_LegalAdvisorWrapper>)JSON.deserialize(herokuData, List<ucl_LegalAdvisorWrapper>.class);
+    private static List<UclLegalAdvisorWrapper> parseHerokuData(String herokuData) {
+        return (List<UclLegalAdvisorWrapper>)JSON.deserialize(herokuData, List<UclLegalAdvisorWrapper>.class);
     }
 
     // Método para el update o insert de Asesores Legales y Clientes
-    private static void upsertLegalAdvisorsAndClients(List<ucl_LegalAdvisorWrapper> legalAdvisors) {
+    private static void UpsertLegalAdvisorsAndClients(List<UclLegalAdvisorWrapper> legalAdvisors) {
         List<ucl_Legal_Advisor__c> legalAdvisorsToUpsert = new List<ucl_Legal_Advisor__c>();
         List<ucl_Client__c> clientsToUpsert = new List<ucl_Client__c>();
 
-        for (ucl_LegalAdvisorWrapper advisorWrapper : legalAdvisors) {
+        for (UclLegalAdvisorWrapper advisorWrapper : legalAdvisors) {
             ucl_Legal_Advisor__c legalAdvisor = new ucl_Legal_Advisor__c(
-                Account_Number__c = advisorWrapper.AccountNumber,
-                Name = advisorWrapper.AccountName,
-                Account_Status__c = advisorWrapper.AccountStatus,
-                As_Of_Date_Date__c = Date.valueOf(advisorWrapper.AsOfDate)
+                Account_Number__c = advisorWrapper.accountNumber,
+                Name = advisorWrapper.accountName,
+                Account_Status__c = advisorWrapper.accountStatus,
+                As_Of_Date_Date__c = Date.valueOf(advisorWrapper.asOfDate)
             );
 
             // Se asume AccountNumber is an external ID
             legalAdvisorsToUpsert.add(legalAdvisor);
 
-            for (ucl_ClientWrapper clientWrapper : advisorWrapper.Clients) {
+            for (UclClientWrapper clientWrapper : advisorWrapper.clients) {
                 ucl_Client__c client = new ucl_Client__c(
-                    Name = clientWrapper.FirstName,
-                    Last_Name__c = clientWrapper.LastName,
-                    Email__c = clientWrapper.Email,
-                    Phone__c = clientWrapper.Phone,
-                    Address__c = clientWrapper.Address,
-                    Client_Number__c = clientWrapper.ClientNumber
+                    Name = clientWrapper.firstName,
+                    Last_Name__c = clientWrapper.lastName,
+                    Email__c = clientWrapper.email,
+                    Phone__c = clientWrapper.phone,
+                    Address__c = clientWrapper.address,
+                    Client_Number__c = clientWrapper.clientNumber
                 );
 
                 // Assuming ClientNumber is an external ID
@@ -115,21 +113,21 @@ public class ucl_NightlyIntegrationService {
 
 
     // Wrapper class for Legal Advisor data
-    private class ucl_LegalAdvisorWrapper {
-        public String AccountNumber;
-        public String AccountName;
-        public String AccountStatus;
-        public String AsOfDate;
-        public List<ucl_ClientWrapper> Clients;
+    private class UclLegalAdvisorWrapper {
+        public String accountNumber;
+        public String accountName;
+        public String accountStatus;
+        public String asOfDate;
+        public List<UclClientWrapper> clients;
     }
 
     // Wrapper class for Client data
-    private class ucl_ClientWrapper {
-        public String FirstName;
-        public String LastName;
-        public String Email;
-        public String Phone;
-        public String Address;
-        public String ClientNumber;
+    private class UclClientWrapper {
+        public String firstName;
+        public String lastName;
+        public String email;
+        public String phone;
+        public String address;
+        public String clientNumber;
     }
 }
