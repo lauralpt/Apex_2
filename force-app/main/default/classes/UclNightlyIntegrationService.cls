@@ -73,11 +73,7 @@ public class UclNightlyIntegrationService implements Schedulable {
         
          for (UclLegalAdvisorWrapper advisorWrapper : legalAdvisors) {
             if (advisorWrapper.accountStatus == 'Enabled') {
-                List<String> dateArray = String.valueOf(advisorWrapper.asOfDate).split('/');
-                Integer m = Integer.valueOf(dateArray[0]);
-                Integer d = Integer.valueOf(dateArray[1]);
-                Integer y = Integer.valueOf(dateArray[2]);
-                Date dateD = Date.newInstance(y, m, d);
+                Date dateD = convertStringToDate(String.valueOf(advisorWrapper.asOfDate));
                 legalAdvisor.Account_Number__c = advisorWrapper.accountNumber;
                 legalAdvisor.Account_Name__c = advisorWrapper.accountName;
                 legalAdvisor.Account_Status__c = advisorWrapper.accountStatus;
@@ -139,5 +135,13 @@ public class UclNightlyIntegrationService implements Schedulable {
         mail.setSubject('Error en la Sincronización de Datos');
         mail.setPlainTextBody('Se produjo un error: ' + errorMessage);
         Messaging.sendEmail(new Messaging.SingleEmailMessage[] { mail });
+        }
+
+    public static Date convertStringToDate(String dateString) {
+            List<String> dateArray = dateString.split('/');
+            Integer m = Integer.valueOf(dateArray[0]);
+            Integer d = Integer.valueOf(dateArray[1]);
+            Integer y = Integer.valueOf(dateArray[2]);
+            return Date.newInstance(y, m, d);
         }
     }
