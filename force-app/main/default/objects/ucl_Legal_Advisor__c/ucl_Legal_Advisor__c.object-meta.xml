@@ -155,8 +155,9 @@
     <externalSharingModel>Private</externalSharingModel>
     <label>Legal Advisor</label>
     <nameField>
-        <label>Account Name</label>
-        <type>Text</type>
+        <displayFormat>L-{0000}</displayFormat>
+        <label>ID</label>
+        <type>AutoNumber</type>
     </nameField>
     <pluralLabel>Legal Advisors</pluralLabel>
     <searchLayouts></searchLayouts>

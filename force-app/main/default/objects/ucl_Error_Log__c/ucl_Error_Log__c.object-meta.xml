@@ -153,12 +153,12 @@
     <enableSharing>true</enableSharing>
     <enableStreamingApi>true</enableStreamingApi>
     <externalSharingModel>Private</externalSharingModel>
-    <label>Error_Log</label>
+    <label>Error Registry</label>
     <nameField>
-        <label>ucl_Error_Log__c Name</label>
+        <label>Error</label>
         <type>Text</type>
     </nameField>
-    <pluralLabel>Error_Log</pluralLabel>
+    <pluralLabel>Errors Registry</pluralLabel>
     <searchLayouts></searchLayouts>
     <sharingModel>ReadWrite</sharingModel>
     <visibility>Public</visibility>

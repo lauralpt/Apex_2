@@ -1,26 +1,30 @@
-public class ucl_NightlyIntegrationService {
-
+public class UclNightlyIntegrationService implements Schedulable {
     
-    public static void PerformNightlyIntegration() {
-        try {
-            String herokuData = fetchDataFromHeroku();
-            // Parseo de datos
-            List<UclLegalAdvisorWrapper> legalAdvisors = parseHerokuData(herokuData);
-            // Filtrar asesores legales habilitados
-            List<UclLegalAdvisorWrapper> enabledAdvisor = filterEnabledAdvisors(legalAdvisors);
-            // update o insert de informacion
-            UpsertLegalAdvisorsAndClients(enabledAdvisor);
+    public void execute(SchedulableContext ctx) {
+        getPerformNightlyIntegration();
+    }
 
+    public void getPerformNightlyIntegration() {
+        UclNightlyIntegrationService serviceInstance = new UclNightlyIntegrationService();
+        try {
+            List<UclLegalAdvisorWrapper> herokuData = serviceInstance.fetchDataFromHeroku();     
+            // Parseo de datos
+            //List<UclLegalAdvisorWrapper> legalAdvisors = serviceInstance.parseHerokuData(herokuData);
+            System.debug(herokuData);
+            // Filtrar asesores legales habilitados
+            List<UclLegalAdvisorWrapper> enabledAdvisor = serviceInstance.filterEnabledAdvisors(herokuData);
+            // update o insert de informacion
+            serviceInstance.upsertLegalAdvisorsAndClients(enabledAdvisor);
         } catch (Exception ex) {
             // Error Logging
-             logError(ex.getMessage(), ex.getStackTraceString(), 'Info de registros afectados');
+            serviceInstance.logError(ex.getMessage(), ex.getStackTraceString(), 'Info de registros afectados');
             // Envio de correo
-             sendErrorNotification(ex.getMessage());
+             serviceInstance.sendErrorNotification(ex.getMessage());
         }
     }
 	
     // Método para filtrar asesores legales habilitados
-      private static List<UclLegalAdvisorWrapper> filterEnabledAdvisors(List<UclLegalAdvisorWrapper> legalAdvisors) {
+      private List<UclLegalAdvisorWrapper> filterEnabledAdvisors(List<UclLegalAdvisorWrapper> legalAdvisors) {
         List<UclLegalAdvisorWrapper> enabledAdvisors = new List<UclLegalAdvisorWrapper>();
         for (UclLegalAdvisorWrapper advisor : legalAdvisors) {
             if (advisor.AccountStatus == 'Enabled') {
@@ -31,7 +35,7 @@ public class ucl_NightlyIntegrationService {
     }
     
     // Método para recuperar datos desde Heroku
-    private static String FetchDataFromHeroku() {
+    public List<UclLegalAdvisorWrapper> fetchDataFromHeroku() {
         // Url para consumir el json
         String herokuUrl = 'https://altimetrik-bootcamp.herokuapp.com/LegalAccounts';
         
@@ -39,64 +43,81 @@ public class ucl_NightlyIntegrationService {
         request.setEndpoint(herokuUrl);
         request.setMethod('GET');
         HttpResponse response = new Http().send(request);
-
-        //Verifico si la solicitud fue exitosa (código de estado 200)
+    
+        // Verificar si la solicitud fue exitosa (código de estado 200)
         if (response.getStatusCode() == 200) {
-            return response.getBody();
+            // Deserializar el JSON a una lista de objetos LegalAccount
+            String jsonString =  response.getBody();
+            List<UclLegalAdvisorWrapper> legalAccounts = (List<UclLegalAdvisorWrapper>)JSON.deserialize(jsonString, List<UclLegalAdvisorWrapper>.class);
+            return legalAccounts;
         } else {
-            throw new CalloutException('Error obteniendo la informacion desde Heroku: ' 
+            throw new CalloutException('Error obteniendo la información desde Heroku: ' 
                                        + response.getStatusCode() + ' - ' 
                                        + response.getStatus());
         }
     }
 
-    // Método para parsear datos JSON a la clase 
-    private static List<UclLegalAdvisorWrapper> parseHerokuData(String herokuData) {
-        return (List<UclLegalAdvisorWrapper>)JSON.deserialize(herokuData, List<UclLegalAdvisorWrapper>.class);
-    }
 
     // Método para el update o insert de Asesores Legales y Clientes
-    private static void UpsertLegalAdvisorsAndClients(List<UclLegalAdvisorWrapper> legalAdvisors) {
+    public void upsertLegalAdvisorsAndClients(List<UclLegalAdvisorWrapper> legalAdvisors) {
         List<ucl_Legal_Advisor__c> legalAdvisorsToUpsert = new List<ucl_Legal_Advisor__c>();
         List<ucl_Client__c> clientsToUpsert = new List<ucl_Client__c>();
+        Set<String> existingClientNumbers = new Set<String>();
+        ucl_Legal_Advisor__c legalAdvisor = new ucl_Legal_Advisor__c();
+        ucl_Client__c client = new ucl_Client__c();
 
-        for (UclLegalAdvisorWrapper advisorWrapper : legalAdvisors) {
-            ucl_Legal_Advisor__c legalAdvisor = new ucl_Legal_Advisor__c(
-                Account_Number__c = advisorWrapper.accountNumber,
-                Name = advisorWrapper.accountName,
-                Account_Status__c = advisorWrapper.accountStatus,
-                As_Of_Date_Date__c = Date.valueOf(advisorWrapper.asOfDate)
-            );
+        // Obtener todos los Client Numbers existentes en Salesforce
+        for (ucl_Client__c existingClient : [SELECT Client_Number__c FROM ucl_Client__c]) {
+        existingClientNumbers.add(existingClient.Client_Number__c);
+         }
+        
+         for (UclLegalAdvisorWrapper advisorWrapper : legalAdvisors) {
+            if (advisorWrapper.accountStatus == 'Enabled') {
+                List<String> dateArray = String.valueOf(advisorWrapper.asOfDate).split('/');
+                Integer m = Integer.valueOf(dateArray[0]);
+                Integer d = Integer.valueOf(dateArray[1]);
+                Integer y = Integer.valueOf(dateArray[2]);
+                Date dateD = Date.newInstance(y, m, d);
+                legalAdvisor.Account_Number__c = advisorWrapper.accountNumber;
+                legalAdvisor.Account_Name__c = advisorWrapper.accountName;
+                legalAdvisor.Account_Status__c = advisorWrapper.accountStatus;
+                legalAdvisor.As_Of_Date_Date__c = dateD;
+                
+                legalAdvisorsToUpsert.add(legalAdvisor);
 
-            // Se asume AccountNumber is an external ID
-            legalAdvisorsToUpsert.add(legalAdvisor);
-
-            for (UclClientWrapper clientWrapper : advisorWrapper.clients) {
-                ucl_Client__c client = new ucl_Client__c(
-                    Name = clientWrapper.firstName,
-                    Last_Name__c = clientWrapper.lastName,
-                    Email__c = clientWrapper.email,
-                    Phone__c = clientWrapper.phone,
-                    Address__c = clientWrapper.address,
-                    Client_Number__c = clientWrapper.clientNumber
-                );
-
-                // Assuming ClientNumber is an external ID
-                clientsToUpsert.add(client);
+                for (UclClientWrapper clientWrapper : advisorWrapper.clients) {
+                        client.First_Name__c = clientWrapper.firstName;
+                        client.Last_Name__c = clientWrapper.lastName;
+                        client.Email__c = clientWrapper.email;
+                        client.Phone__c = clientWrapper.phone;
+                        client.Address__c = clientWrapper.address;
+                        client.Client_Number__c = clientWrapper.clientNumber;
+                    
+                    clientsToUpsert.add(client);
+                    existingClientNumbers.add(clientWrapper.clientNumber);
+                }
+        }else {
+            ucl_Legal_Advisor__c existingLegalAdvisor = [SELECT Id, Account_Status__c FROM ucl_Legal_Advisor__c WHERE Account_Number__c = :advisorWrapper.accountNumber LIMIT 1];
+            if (existingLegalAdvisor != null && existingLegalAdvisor.Account_Status__c == 'Enabled') {
+                existingLegalAdvisor.Account_Status__c = 'Disabled';
+                legalAdvisorsToUpsert.add(existingLegalAdvisor);
             }
         }
-
-        // Update o insert de Legal Advisors
-        upsert legalAdvisorsToUpsert Account_Number__c;
-        // Update o insert de Clients
-        upsert clientsToUpsert Client_Number__c;
+         // Eliminar clientes que no están presentes en el JSON de Heroku, excepto aquellos creados por un administrador
+            List<ucl_Client__c> clientsToDelete = [SELECT Id FROM ucl_Client__c WHERE Client_Number__c NOT IN :existingClientNumbers AND CreatedBy.Profile.Name != 'System Administrator'];
+            delete clientsToDelete;
+         // Update o insert de Legal Advisors
+            upsert legalAdvisorsToUpsert Account_Number__c;
+         // Update o insert de Clients
+             upsert clientsToUpsert Client_Number__c;
+        }
     }
 
     // Método para registrar errores
-    private static void logError(String errorMessage, String stackTrace, String affectedRecords) {
+    private void logError(String errorMessage, String stackTrace, String affectedRecords) {
         ucl_Error_Log__c errorLog = new ucl_Error_Log__c();
         errorLog.ErrorMessage__c = errorMessage;
-        errorLog.Name = stackTrace;
+        errorLog.Name = errorMessage;
         errorLog.affectedRecords__c = affectedRecords;
         insert errorLog;
     
@@ -110,34 +131,13 @@ public class ucl_NightlyIntegrationService {
         }
     }
     
-
     // Metodo para enviar el email notificador del error
-     private static void sendErrorNotification(String errorMessage) {
+     public void sendErrorNotification(String errorMessage) {
         Messaging.SingleEmailMessage mail = new Messaging.SingleEmailMessage();
-        String[] toAddresses = new String[] {'lauralpt@gmail.com'};
-        mail.setToAddresses(toAddresses);
+        String adminEmail = [SELECT Email FROM User WHERE Profile.Name = 'System Administrator' LIMIT 1].Email;
+        mail.setToAddresses(new String[] { adminEmail });
         mail.setSubject('Error en la Sincronización de Datos');
         mail.setPlainTextBody('Se produjo un error: ' + errorMessage);
         Messaging.sendEmail(new Messaging.SingleEmailMessage[] { mail });
+        }
     }
-
-
-    // Wrapper class for Legal Advisor data
-    private class UclLegalAdvisorWrapper {
-        public String accountNumber;
-        public String accountName;
-        public String accountStatus;
-        public String asOfDate;
-        public List<UclClientWrapper> clients;
-    }
-
-    // Wrapper class for Client data
-    private class UclClientWrapper {
-        public String firstName;
-        public String lastName;
-        public String email;
-        public String phone;
-        public String address;
-        public String clientNumber;
-    }
-}
