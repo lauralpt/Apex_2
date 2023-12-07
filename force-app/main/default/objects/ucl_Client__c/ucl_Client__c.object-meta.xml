@@ -155,8 +155,9 @@
     <externalSharingModel>ControlledByParent</externalSharingModel>
     <label>Client</label>
     <nameField>
-        <label>First Name</label>
-        <type>Text</type>
+        <displayFormat>C-{0000}</displayFormat>
+        <label>ID</label>
+        <type>AutoNumber</type>
     </nameField>
     <pluralLabel>Clients</pluralLabel>
     <searchLayouts></searchLayouts>
