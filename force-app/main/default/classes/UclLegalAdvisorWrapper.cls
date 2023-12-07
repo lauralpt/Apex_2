@@ -1,12 +1,12 @@
 public class UclLegalAdvisorWrapper {
-public String accountNumber;
+    public String accountNumber;
     public String accountName;
     public String accountStatus;
-    public Date asOfDate;
+    public String asOfDate;
     public List<UclClientWrapper> clients;
 
     // Constructor
-    public UclLegalAdvisorWrapper(String accNumber, String accName, String accStatus, Date fecha) {
+    public UclLegalAdvisorWrapper(String accNumber, String accName, String accStatus, String fecha) {
         this.accountNumber = accNumber;
         this.accountName = accName;
         this.accountStatus = accStatus;

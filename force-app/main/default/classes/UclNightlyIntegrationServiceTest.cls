@@ -54,12 +54,12 @@ static void testFetchDataFromHeroku() {
     static void testUpsertLegalAdvisorsAndClients() {
     // Crear datos de prueba
     List<UclLegalAdvisorWrapper> legalAdvisors = new List<UclLegalAdvisorWrapper>();
-    UclLegalAdvisorWrapper legalAdvisor = new UclLegalAdvisorWrapper('123', 'Test Account', 'Enabled', Date.today());
+    UclLegalAdvisorWrapper legalAdvisor = new UclLegalAdvisorWrapper('123', 'Test Account', 'Enabled', '12/12/2022');
     legalAdvisor.clients = new List<UclClientWrapper>{
     new UclClientWrapper(
         'John', // firstName
         'Doe', // lastName
-        'john.doe@example.com', // email
+        'lauralpt@gmail.com', // email
         '1234567890', // phone
         '123 Main St', // address
         'C123' // clientNumber
@@ -81,10 +81,10 @@ static void testFetchDataFromHeroku() {
     System.assertEquals('Test Account', insertedLegalAdvisors[0].Account_Name__c, 'El nombre de la cuenta debería ser "Test Account"');
 
     // Verificar que se hayan insertado correctamente los clientes asociados
-    List<ucl_Client__c> insertedClients = [SELECT Id, Client_Number__c, First_Name__c FROM ucl_Client__c WHERE Client_Number__c = 'C123'];
+    List<ucl_Client__c> insertedClients = [SELECT Id, Client_Number__c, Name FROM ucl_Client__c WHERE Client_Number__c = 'C123'];
     System.assertEquals(1, insertedClients.size(), 'Debería haberse insertado un cliente');
     System.assertEquals('C123', insertedClients[0].Client_Number__c, 'El número de cliente debería ser "C123"');
-    System.assertEquals('John', insertedClients[0].First_Name__c, 'El nombre del cliente debería ser "John"');
+    System.assertEquals('John', insertedClients[0].Name, 'El nombre del cliente debería ser "John"');
 
     // Asegurar que la lógica de actualización se maneje correctamente (por ejemplo, cambiar el estado a "Disabled")
     serviceInstance.upsertLegalAdvisorsAndClients(legalAdvisors);
@@ -153,8 +153,6 @@ static void testSendErrorNotification() {
 
     Test.stopTest();
   }
-
-
 
 }
 
