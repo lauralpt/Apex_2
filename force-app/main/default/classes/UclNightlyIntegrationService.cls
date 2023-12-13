@@ -3,8 +3,8 @@ public class UclNightlyIntegrationService implements Schedulable {
     public void execute(SchedulableContext ctx) {
         getPerformNightlyIntegration();
     }
-
-    public void getPerformNightlyIntegration() {
+    @future(Callout=true)
+    public static void getPerformNightlyIntegration() {
         UclNightlyIntegrationService serviceInstance = new UclNightlyIntegrationService();
         try {
              // Parseo de datos
@@ -16,7 +16,7 @@ public class UclNightlyIntegrationService implements Schedulable {
             serviceInstance.upsertLegalAdvisorsAndClients(enabledAdvisor);
         } catch (Exception ex) {
             // Error Logging
-            serviceInstance.logError(ex.getMessage(), ex.getStackTraceString());
+            serviceInstance.logError(ex.getMessage());
             // Envio de correo
              serviceInstance.sendErrorNotification(ex.getMessage());
         }
@@ -121,10 +121,9 @@ public class UclNightlyIntegrationService implements Schedulable {
 }
 
     // Método para registrar errores
-    private void logError(String errorMessage, String stackTrace) {
+    private void logError(String errorMessage) {
         ucl_Error_Log__c errorLog = new ucl_Error_Log__c();
         errorLog.errorMessage__c = errorMessage;
-        errorLog.affectedRecords__c = stackTrace;
         errorLog.Fecha__c = Datetime.now();
         try {
             insert errorLog; 
